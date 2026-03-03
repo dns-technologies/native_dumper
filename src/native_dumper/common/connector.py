@@ -1,18 +1,28 @@
-from typing import NamedTuple
-
-from .defines import (
-    DEFAULT_DATABASE,
-    DEFAULT_USER,
-    DEFAULT_PASSWORD,
-    DEFAULT_PORT,
-)
+from base_dumper import DBConnector
 
 
-class CHConnector(NamedTuple):
+DEFAULT_DATABASE = ""
+DEFAULT_USER = "default"
+DEFAULT_PASSWORD = ""
+DEFAULT_PORT = 8123
+
+
+class CHConnector(DBConnector):
     """Connector for Clickhouse."""
 
-    host: str
-    dbname: str = DEFAULT_DATABASE
-    user: str = DEFAULT_USER
-    password: str = DEFAULT_PASSWORD
-    port: int = DEFAULT_PORT
+    def __new__(
+        cls,
+        host: str,
+        dbname: str = DEFAULT_DATABASE,
+        user: str = DEFAULT_USER,
+        password: str = DEFAULT_PASSWORD,
+        port: int = DEFAULT_PORT,
+    ):
+        return super().__new__(
+            cls,
+            host,
+            dbname,
+            user,
+            password,
+            port,
+        )

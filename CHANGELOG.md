@@ -1,5 +1,25 @@
 # Version History
 
+## 0.3.6.dev0
+
+* Developer release (not public to pip)
+* Add depends base_dumper==0.0.0.5
+* Add mode parameter for future updates
+* Add worked timeout and isolation parameters
+* CHConnector now based on DBConnector
+* Change hidden methods to protected methods
+* Errors now based on BaseDumperError
+* Fix HTTPCursor.get_response() get error for not connected server
+* Fix HttpResponse.read() param in pyo3http.pyi
+* Fix make_columns() function for DateTime64 value without timezone
+* Fix write_between() method without dumper_src parameter
+* HTTPCursor now based on AbstractCursor
+* Move default CHConnector params from defines.py into connector.py
+* Refactor code
+* Remove depends light-compressor, sqlparse
+* Remove deprecated param DBMS_DEFAULT_TIMEOUT_SEC from defines.py
+* Removed duplicate code if it already in the base_dumper package
+
 ## 0.3.5.3
 
 * Downgrade depends sqlparse>=0.5.4

@@ -1,8 +1,13 @@
-class ClickhouseServerError(ValueError):
+from base_dumper import (
+    BaseDumperError,
+    BaseDumperValueError,
+)
+
+class ClickhouseServerError(BaseDumperValueError):
     """Clickhouse errors."""
 
 
-class NativeDumperError(Exception):
+class NativeDumperError(BaseDumperError):
     """NativeDumper base error."""
 
 
@@ -14,5 +19,5 @@ class NativeDumperWriteError(NativeDumperError):
     """NativeDumper write error."""
 
 
-class NativeDumperValueError(ValueError):
+class NativeDumperValueError(NativeDumperError, BaseDumperValueError):
     """NativeDumper value error."""

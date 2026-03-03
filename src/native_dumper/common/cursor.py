@@ -1,6 +1,8 @@
+from logging import Logger
 from typing import Iterable
 from uuid import uuid4
 
+from base_dumper import AbstractCursor
 from light_compressor import (
     CompressionMethod,
     define_reader,
@@ -14,7 +16,6 @@ from ..version import __version__
 from .connector import CHConnector
 from .defines import CHUNK_SIZE
 from .errors import ClickhouseServerError
-from .logger import Logger
 from .pyo3http import (
     HttpResponse,
     HttpSession,
@@ -27,7 +28,7 @@ def string_error(data: bytes) -> str:
     return data.decode("utf-8", errors="replace").strip()
 
 
-class HTTPCursor:
+class HTTPCursor(AbstractCursor):
     """Class for send queryes to Clickhouse server
     and read/write Native format."""
 
@@ -110,7 +111,7 @@ class HTTPCursor:
         if status != 200:
 
             if not self.is_connected:
-                error = string_error(response.read())
+                error = string_error(response.read(None))
                 response.close()
             else:
                 bufferobj = define_reader(response, self.compression_method)

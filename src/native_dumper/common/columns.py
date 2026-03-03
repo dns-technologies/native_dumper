@@ -19,7 +19,10 @@ def make_columns(
         elif col_type == "Decimal":
             col_type = f"{col_type}({info.precision}, {info.scale})"
         elif col_type == "DateTime64":
-            col_type = f"{col_type}({info.precision}, {info.tzinfo})"
+            if info.tzinfo:
+                col_type = f"{col_type}({info.precision}, {info.tzinfo})"
+            else:
+                col_type = f"{col_type}({info.precision})"
         elif col_type in ("Enum8", "Enum16"):
             col_type = f"{col_type}({info.enumcase})"
         elif col_type == "Time64":

@@ -5,7 +5,6 @@ from light_compressor import CompressionMethod
 from .common import (
     CHConnector,
     ClickhouseServerError,
-    DumperLogger,
     HTTPCursor,
     NativeDumperError,
     NativeDumperReadError,
@@ -22,7 +21,6 @@ __all__ = (
     "CHConnector",
     "ClickhouseServerError",
     "CompressionMethod",
-    "DumperLogger",
     "HTTPCursor",
     "NativeDumper",
     "NativeDumperError",

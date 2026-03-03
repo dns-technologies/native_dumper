@@ -11,7 +11,7 @@ class HttpResponse:
 
     def read(
         self,
-        size: int | None = None,
+        size: int | None,
     ) -> bytes:
         """Read data from the HTTP response.
 

@@ -1,3 +1,2 @@
-light-compressor==0.0.2.2
 nativelib==0.2.2.6
-sqlparse>=0.5.4
+base_dumper==0.0.0.5
