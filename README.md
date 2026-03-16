@@ -144,24 +144,24 @@ dumper.from_polars(polars_frame, table_name)
 
 ### Open Native file format
 
-Get info from my another repository https://github.com/0xMihalich/nativelib
+Get info from my another repository https://github.com/dns-technologies/nativelib
 
 ## Installation
 
 ### From pip
 
 ```bash
-pip install native-dumper
+pip install native-dumper -U --index-url https://dns-technologies.github.io/dbhose-dev-pip/simple/
 ```
 
 ### From local directory
 
 ```bash
-pip install .
+pip install . --extra-index-url https://dns-technologies.github.io/dbhose-dev-pip/simple/
 ```
 
 ### From git
 
 ```bash
-pip install git+https://github.com/0xMihalich/native_dumper
+pip install git+https://github.com/dns-technologies/native_dumper --extra-index-url https://dns-technologies.github.io/dbhose-dev-pip/simple/
 ```

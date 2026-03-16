@@ -36,6 +36,7 @@ class HTTPCursor(AbstractCursor):
         self,
         connector: CHConnector,
         compression_method: CompressionMethod,
+        compression_level: int,
         logger: Logger,
         timeout: int,
         user_agent: str | None = None,
@@ -47,6 +48,11 @@ class HTTPCursor(AbstractCursor):
 
         self.connector = connector
         self.compression_method = compression_method
+        self.compression_level = (
+            1 if compression_level < 1
+            else 9 if compression_level > 9
+            else compression_level
+        )
         self.logger = logger
         self.timeout = timeout
         self.user_agent = user_agent
@@ -69,7 +75,8 @@ class HTTPCursor(AbstractCursor):
         }.get(int(self.connector.port), "http")
         self.url = (
             f"{self.mode}://{self.connector.host}:{self.connector.port}/"
-            "?enable_http_compression=1"
+            "?enable_http_compression=1&http_zlib_compression_level="
+            f"{self.compression_level}"
         )
         self.params = {
             "database": connector.dbname,

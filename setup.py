@@ -3,7 +3,7 @@ from setuptools_rust import RustExtension
 
 setup(
     name="native-dumper",
-    version="0.3.6.dev0",
+    version="0.3.6.dev1",
     description=(
         "Library for read and write Native format between Clickhouse and file."
     ),
@@ -11,7 +11,7 @@ setup(
     long_description_content_type="text/markdown",
     author="0xMihalich",
     author_email="bayanmobile87@gmail.com",
-    url="https://0xmihalich.github.io/dbhose_airflow/classes/native_dumper/index.html",
+    url="https://dns-technologies.github.io/dbhose_airflow/classes/native_dumper/index.html",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     rust_extensions=[
@@ -22,8 +22,8 @@ setup(
         )
     ],
     install_requires=[
-        "nativelib==0.2.2.6",
-        "base_dumper==0.0.0.5",
+        "base_dumper==0.1.0.dev2",
+        "nativelib==0.2.3.dev3",
     ],
     include_package_data=True,
     zip_safe=False,

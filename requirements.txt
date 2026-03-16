@@ -1,2 +1,3 @@
-nativelib==0.2.2.6
-base_dumper==0.0.0.5
+--extra-index-url https://dns-technologies.github.io/dbhose-dev-pip/simple/
+base_dumper==0.1.0.dev2
+nativelib==0.2.3.dev3

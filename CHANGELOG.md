@@ -1,5 +1,14 @@
 # Version History
 
+## 0.3.6.dev1
+
+* Developer release (not public to pip)
+* Update depends base_dumper==0.1.0.dev2
+* Update depends light-compressor==0.1.0.dev2
+* Update depends nativelib==0.2.3.dev3
+* Add compression_level attribute to HTTPCursor
+* Add compression_level attribute to NativeDumper
+
 ## 0.3.6.dev0
 
 * Developer release (not public to pip)

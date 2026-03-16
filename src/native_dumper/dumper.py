@@ -22,6 +22,7 @@ from base_dumper import (
     transfer_diagram,
 )
 from light_compressor import (
+    CompressionLevel,
     CompressionMethod,
     auto_detector,
     define_reader,
@@ -56,10 +57,12 @@ class NativeDumper(BaseDumper):
         self,
         connector: CHConnector,
         compression_method: CompressionMethod = CompressionMethod.ZSTD,
+        compression_level: int = CompressionLevel.DEFAULT_COMPRESSION,
         logger: Logger | None = None,
         timeout: int | None = None,
         isolation: IsolationLevel = IsolationLevel.committed,
         mode: DumperMode = DumperMode.PROD,
+        s3fs: bool = False,
     ) -> None:
         """Class initialization."""
 
@@ -78,16 +81,19 @@ class NativeDumper(BaseDumper):
         super().__init__(
             connector,
             compression_method,
+            compression_level,
             logger,
             timeout,
             isolation,
             mode,
+            s3fs,
         )
 
         try:
             self.cursor = HTTPCursor(
                 connector=self.connector,
                 compression_method=self.compression_method,
+                compression_level=self.compression_level,
                 logger=self.logger,
                 timeout=timeout,
                 user_agent=self.__class__.__name__,
@@ -308,6 +314,7 @@ class NativeDumper(BaseDumper):
                 data = define_writer(
                     file_writer(reader),
                     self.compression_method,
+                    self.compression_level,
                 )
             else:
                 reader = fileobj

@@ -1,6 +1,9 @@
 """Library for read and write Native format between Clickhouse and file."""
 
-from light_compressor import CompressionMethod
+from light_compressor import (
+    CompressionLevel,
+    CompressionMethod,
+)
 
 from .common import (
     CHConnector,
@@ -20,6 +23,7 @@ __all__ = (
     "__version__",
     "CHConnector",
     "ClickhouseServerError",
+    "CompressionLevel",
     "CompressionMethod",
     "HTTPCursor",
     "NativeDumper",
