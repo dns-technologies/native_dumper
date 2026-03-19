@@ -11,7 +11,7 @@ class HttpResponse:
 
     def read(
         self,
-        size: int | None,
+        size: int | None = None,
     ) -> bytes:
         """Read data from the HTTP response.
 
@@ -187,7 +187,7 @@ class HttpSession:
 
     def __init__(
         self,
-        timeout: float | int | None,
+        timeout: float | int | None = None,
     ) -> None:
         """Initialize an HTTP session.
 

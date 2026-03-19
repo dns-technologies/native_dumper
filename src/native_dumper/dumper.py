@@ -4,6 +4,7 @@ from io import (
     BufferedWriter,
 )
 from logging import Logger
+from types import MethodType
 from typing import (
     Any,
     BinaryIO,
@@ -15,10 +16,11 @@ from typing import (
 from base_dumper import (
     BaseDumper,
     DBMetadata,
+    DebugInfo,
     DumperMode,
     IsolationLevel,
+    Timeout,
     multiquery,
-    timeouts,
     transfer_diagram,
 )
 from light_compressor import (
@@ -44,6 +46,7 @@ from .common import (
     NativeDumperWriteError,
     file_writer,
     make_columns,
+    query_template,
 )
 from .version import __version__
 
@@ -57,7 +60,7 @@ class NativeDumper(BaseDumper):
         self,
         connector: CHConnector,
         compression_method: CompressionMethod = CompressionMethod.ZSTD,
-        compression_level: int = CompressionLevel.DEFAULT_COMPRESSION,
+        compression_level: int = CompressionLevel.ZSTD_DEFAULT,
         logger: Logger | None = None,
         timeout: int | None = None,
         isolation: IsolationLevel = IsolationLevel.committed,
@@ -73,9 +76,9 @@ class NativeDumper(BaseDumper):
             )
 
         if timeout is None:
-            timeout = timeouts.CLICKHOUSE_DEFAULT_TIMEOUT
+            timeout = Timeout.CLICKHOUSE_DEFAULT_TIMEOUT
 
-        self.version = __version__
+        self.__version__ = __version__
         self.stream_type = "native"
 
         super().__init__(
@@ -112,6 +115,16 @@ class NativeDumper(BaseDumper):
             f"[{self.dbname} {self.version}]"
         )
 
+        if self.mode is not DumperMode.PROD:
+            self.logger.info(
+                "NativeDumper additional info:\n"
+                f"Version: {self.__version__}\n"
+                f"User Agent: {self.__class__.__name__}/{self.__version__}\n"
+                f"Compression method: {self.compression_method.name}\n"
+                f"Compression level: {self.compression_level}\n"
+                f"Statement timeout: {self.timeout} seconds\n"
+            )
+
     @property
     def timeout(self) -> int:
         """Property method for get session timeout."""
@@ -134,6 +147,45 @@ class NativeDumper(BaseDumper):
         raise NativeDumperValueError(
             "Clickhouse server don't have transaction isolation level.",
         )
+
+    def mode_action(
+        self,
+        action_data: str | MethodType | None = None,
+        *args: Any,
+        **kwargs: dict[str, Any],
+    ) -> None:
+        """DumperMode.DEBUG or DumperMode.TEST action."""
+
+        if action_data:
+            if isinstance(action_data, str):
+
+                self.cursor.execute(action_data)
+
+                if self.mode is DumperMode.PROD:
+                    return
+
+                user_agent = f"{self.__class__.__name__}/{self.__version__}"
+                query_id = self.cursor.params["query_id"]
+                query_info = query_template("query_info").format(
+                    user_agent=user_agent,
+                    query_id=query_id,
+                )
+                self.logger.info("Get query debug info.")
+
+                for _ in range(180):
+                    try:
+                        reader = self.cursor.get_stream(query_info, True)
+                        debug_data = next(reader.to_rows())
+                        reader.close()
+                        break
+                    except EOFError:
+                        """Try again without waiting."""
+
+                return self.logger.info(DebugInfo(
+                    *debug_data,
+                ))
+
+            return action_data(*args, **kwargs)
 
     @multiquery
     def _read_dump(

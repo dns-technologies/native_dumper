@@ -15,6 +15,7 @@ from .pyo3http import (
     HttpResponse,
     HttpSession,
 )
+from .query import query_template
 from .writer import file_writer
 
 
@@ -31,4 +32,5 @@ __all__ = (
     "NativeDumperWriteError",
     "file_writer",
     "make_columns",
+    "query_template",
 )

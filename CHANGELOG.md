@@ -1,5 +1,23 @@
 # Version History
 
+## 0.3.6.dev2
+
+* Developer release (not public to pip)
+* Update depends base_dumper==0.1.0.dev4
+* Update depends light-compressor==0.1.0.dev3
+* Update depends nativelib==0.2.3.dev4
+* Add timeout=None to HttpSession
+* Add size=None to HttpResponse.read()
+* Add imports CompressionLevel, DumperLogger, DumperMode, IsolationLevel and Timeout
+* Add queries folder with query_info.sql
+* Add query_id key to HTTPCursor.params
+* Add Debug info
+* Add optional parameter waiting_data to HTTPCursor.get_stream() method. Default is False
+* Change NativeDumper.compression_level default value to CompressionLevel.ZSTD_DEFAULT
+* Delete HTTPCursor.check_length parameter
+* Delete deprecated code from HTTPCursor
+* Fix string_error() function
+
 ## 0.3.6.dev1
 
 * Developer release (not public to pip)

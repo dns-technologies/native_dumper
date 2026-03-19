@@ -1,8 +1,12 @@
 """Library for read and write Native format between Clickhouse and file."""
 
-from light_compressor import (
+from base_dumper import (
     CompressionLevel,
     CompressionMethod,
+    DumperLogger,
+    DumperMode,
+    IsolationLevel,
+    Timeout,
 )
 
 from .common import (
@@ -25,11 +29,15 @@ __all__ = (
     "ClickhouseServerError",
     "CompressionLevel",
     "CompressionMethod",
+    "DumperLogger",
+    "DumperMode",
     "HTTPCursor",
+    "IsolationLevel",
     "NativeDumper",
     "NativeDumperError",
     "NativeDumperReadError",
     "NativeDumperValueError",
     "NativeDumperWriteError",
+    "Timeout",
 )
 __author__ = "0xMihalich"

@@ -1,3 +1,4 @@
+from io import BytesIO
 from logging import Logger
 from typing import Iterable
 from uuid import uuid4
@@ -14,7 +15,6 @@ from nativelib import (
 
 from ..version import __version__
 from .connector import CHConnector
-from .defines import CHUNK_SIZE
 from .errors import ClickhouseServerError
 from .pyo3http import (
     HttpResponse,
@@ -22,10 +22,21 @@ from .pyo3http import (
 )
 
 
+ERROR_BUFFER = BytesIO()
+
+
 def string_error(data: bytes) -> str:
     """Bytes to string decoder."""
 
-    return data.decode("utf-8", errors="replace").strip()
+    ERROR_BUFFER.seek(0)
+    ERROR_BUFFER.truncate()
+    ERROR_BUFFER.write(data)
+    ERROR_BUFFER.seek(0)
+
+    return define_reader(ERROR_BUFFER).read(len(data)).decode(
+        "utf-8",
+        errors="replace",
+    ).strip()
 
 
 class HTTPCursor(AbstractCursor):
@@ -81,10 +92,8 @@ class HTTPCursor(AbstractCursor):
         self.params = {
             "database": connector.dbname,
             "query": "",
+            "query_id": "",
             "session_id": str(uuid4()),
-        }
-        self.check_length = {
-            CompressionMethod.NONE: 1024,
         }
         self.server_version = None
 
@@ -105,6 +114,7 @@ class HTTPCursor(AbstractCursor):
         """Get response from clickhouse server."""
 
         self.params["query"] = query
+        self.params["query_id"] = str(uuid4())
 
         response = self.session.post(
             url=self.url,
@@ -116,15 +126,8 @@ class HTTPCursor(AbstractCursor):
         status = response.get_status()
 
         if status != 200:
-
-            if not self.is_connected:
-                error = string_error(response.read(None))
-                response.close()
-            else:
-                bufferobj = define_reader(response, self.compression_method)
-                error = string_error(bufferobj.read(CHUNK_SIZE))
-                bufferobj.close()
-
+            error = string_error(response.read())
+            response.close()
             self.logger.error(f"ClickhouseServerError: {error}")
             raise ClickhouseServerError(error)
 
@@ -133,6 +136,7 @@ class HTTPCursor(AbstractCursor):
     def get_stream(
         self,
         query: str,
+        waiting_data: bool = False,
     ) -> NativeReader:
         """Get answer from server as unpacked stream file."""
 
@@ -140,23 +144,16 @@ class HTTPCursor(AbstractCursor):
 
         try:
             bufferobj = define_reader(stream, self.compression_method)
-            check_error = bufferobj.read(
-                self.check_length.get(self.compression_method, 4)
-            )[:4]
-            bufferobj.seek(0)
-        except EOFError:
-            error = (
+        except EOFError as error:
+            if waiting_data:
+                raise error
+
+            error_message = (
                 "Code: 92. DB::Exception: (EMPTY_DATA_PASSED) "
                 f"(version {self.server_version} (official build))"
             )
-            self.logger.error(f"ClickhouseServerError: {error}")
-            raise ClickhouseServerError(error)
-
-        if check_error == b"Code":
-            error = string_error(bufferobj.read(CHUNK_SIZE))
-            bufferobj.close()
-            self.logger.error(f"ClickhouseServerError: {error}")
-            raise ClickhouseServerError(error)
+            self.logger.error(f"ClickhouseServerError: {error_message}")
+            raise ClickhouseServerError(error_message)
 
         return NativeReader(bufferobj)
 

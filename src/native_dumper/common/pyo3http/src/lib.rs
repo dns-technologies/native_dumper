@@ -98,6 +98,7 @@ impl HttpResponse {
 #[pymethods]
 impl HttpResponse {
 
+    #[pyo3(signature = (size=None))]
     fn read(&self, py: Python, size: Option<usize>) -> PyResult<Py<PyBytes>> {
         if self.is_reading_complete() {
             return Ok(PyBytes::new(py, &[]).into());
@@ -503,6 +504,7 @@ struct HttpSession {
 #[pymethods]
 impl HttpSession {
     #[new]
+    #[pyo3(signature = (timeout=None))]
     fn new(timeout: Option<f64>) -> PyResult<Self> {
         let client_builder = Client::builder()
             .tcp_keepalive(Duration::from_secs(60))
