@@ -1,5 +1,20 @@
 # Version History
 
+## 0.3.6.dev3
+
+* Developer release (not public to pip)
+* Update depends base_dumper==0.1.0.dev5
+* Add TEST mode actions
+* Add NativeDumper.user_agent parameter
+* Add NativeDumper.dump_format parameter
+* Add DumpFormat import
+* Remove NativeDumper.s3fs parameter
+* Refactor NativeDumper.mode_action() method
+* Refactor NativeDumper._write_between() method
+* Improve make_columns() function
+* Improve DEBUG mode initialivation message
+* Disabled session updates where not required
+
 ## 0.3.6.dev2
 
 * Developer release (not public to pip)

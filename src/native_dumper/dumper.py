@@ -18,10 +18,11 @@ from base_dumper import (
     DBMetadata,
     DebugInfo,
     DumperMode,
+    DumpFormat,
     IsolationLevel,
     Timeout,
+    log_diagram,
     multiquery,
-    transfer_diagram,
 )
 from light_compressor import (
     CompressionLevel,
@@ -65,7 +66,7 @@ class NativeDumper(BaseDumper):
         timeout: int | None = None,
         isolation: IsolationLevel = IsolationLevel.committed,
         mode: DumperMode = DumperMode.PROD,
-        s3fs: bool = False,
+        dump_format: DumpFormat = DumpFormat.RAW,
     ) -> None:
         """Class initialization."""
 
@@ -80,6 +81,7 @@ class NativeDumper(BaseDumper):
 
         self.__version__ = __version__
         self.stream_type = "native"
+        self.user_agent = f"{self.__class__.__name__}/{self.__version__}"
 
         super().__init__(
             connector,
@@ -89,7 +91,7 @@ class NativeDumper(BaseDumper):
             timeout,
             isolation,
             mode,
-            s3fs,
+            dump_format,
         )
 
         try:
@@ -119,9 +121,10 @@ class NativeDumper(BaseDumper):
             self.logger.info(
                 "NativeDumper additional info:\n"
                 f"Version: {self.__version__}\n"
-                f"User Agent: {self.__class__.__name__}/{self.__version__}\n"
+                f"User agent: {self.user_agent}\n"
                 f"Compression method: {self.compression_method.name}\n"
                 f"Compression level: {self.compression_level}\n"
+                f"Dump format: {self.dump_format.name}\n"
                 f"Statement timeout: {self.timeout} seconds\n"
             )
 
@@ -164,10 +167,9 @@ class NativeDumper(BaseDumper):
                 if self.mode is DumperMode.PROD:
                     return
 
-                user_agent = f"{self.__class__.__name__}/{self.__version__}"
                 query_id = self.cursor.params["query_id"]
                 query_info = query_template("query_info").format(
-                    user_agent=user_agent,
+                    user_agent=self.user_agent,
                     query_id=query_id,
                 )
                 self.logger.info("Get query debug info.")
@@ -222,7 +224,11 @@ class NativeDumper(BaseDumper):
                 version=fileobj.name,
                 columns=columns,
             )
-            self.logger.info(transfer_diagram(source, destination))
+            log_diagram(self.logger, self.mode, source, destination)
+
+            if self.mode is DumperMode.TEST:
+                return
+
             stream = self.cursor.get_response(query)
             size = 0
 
@@ -238,7 +244,6 @@ class NativeDumper(BaseDumper):
                 self.logger.warning("Empty data read!")
 
             self.logger.info(f"Read from {self.connector.host} done.")
-            return True
         except ClickhouseServerError as error:
             raise error
         except Exception as error:
@@ -260,11 +265,6 @@ class NativeDumper(BaseDumper):
             self.logger.error(f"NativeDumperValueError: {error_message}")
             raise NativeDumperValueError(error_message)
 
-        if not table_dest:
-            error_message = "Destination table name not defined."
-            self.logger.error(f"NativeDumperValueError: {error_message}")
-            raise NativeDumperValueError(error_message)
-
         if not dumper_src:
             cursor = self.cursor
             src_dbname = self.dbname
@@ -274,13 +274,22 @@ class NativeDumper(BaseDumper):
             src_dbname = dumper_src.dbname
             src_version = dumper_src.version
         else:
-            if query_src:
-                query_src = query_src.strip().strip(";")
-
             reader = dumper_src.to_reader(
                 query=query_src,
                 table_name=table_src,
             )
+
+            if self.mode is DumperMode.TEST:
+
+                if reader.__class__ is not DBMetadata:
+                    reader.close()
+
+                return self.from_rows(
+                    dtype_data=None,
+                    table_name=table_dest,
+                    source=dumper_src._dbmeta,
+                )
+
             dtype_data = reader.to_rows()
             self.from_rows(
                 dtype_data=dtype_data,
@@ -297,8 +306,6 @@ class NativeDumper(BaseDumper):
 
         if not query_src:
             query_src = f"SELECT * FROM {table_src}"
-        else:
-            query_src = query_src.strip().strip(";")
 
         source = DBMetadata(
             name=src_dbname,
@@ -310,7 +317,11 @@ class NativeDumper(BaseDumper):
             version=self.version,
             columns=make_columns(self.cursor.metadata(table_dest)),
         )
-        self.logger.info(transfer_diagram(source, destination))
+        log_diagram(self.logger, self.mode, source, destination)
+
+        if self.mode is DumperMode.TEST:
+            return
+
         stream = cursor.get_response(query_src)
         self.write_dump(stream, table_dest, cursor.compression_method)
 
@@ -338,6 +349,11 @@ class NativeDumper(BaseDumper):
             version=self.version,
             columns=make_columns(self.cursor.metadata(f"({query}\n)")),
         )
+
+        if self.mode is DumperMode.TEST:
+            log_diagram(self.logger, self.mode, self._dbmeta)
+            return self._dbmeta
+
         return self.cursor.get_stream(query)
 
     def write_dump(
@@ -361,29 +377,47 @@ class NativeDumper(BaseDumper):
             if not compression_method:
                 compression_method = auto_detector(fileobj)
 
+            raw_file = define_reader(fileobj, compression_method)
+            reader = NativeReader(raw_file)
+            reader.read_info()
+            src_columns = make_columns(reader.block_reader.column_list)
+            source = DBMetadata(
+                name="file",
+                version=fileobj.name,
+                columns=src_columns,
+            )
+            destination = DBMetadata(
+                name=self.dbname,
+                version=self.version,
+                columns=make_columns(self.cursor.metadata(table_name)),
+            )
+            log_diagram(self.logger, self.mode, source, destination)
+
+            if self.mode is DumperMode.TEST:
+                return reader.close()
+
+            raw_file.seek(0)
+            bytes_data = file_writer(raw_file)
+
             if compression_method != self.compression_method:
-                reader = define_reader(fileobj, compression_method)
-                data = define_writer(
-                    file_writer(reader),
+                bytes_data = define_writer(
+                    bytes_data,
                     self.compression_method,
                     self.compression_level,
                 )
-            else:
-                reader = fileobj
-                data = file_writer(reader)
 
             self.cursor.upload_data(
                 table=table_name,
-                data=data,
+                data=bytes_data,
             )
             collect()
-            size = reader.tell()
+            size = raw_file.tell()
             self.logger.info(f"Successfully sending {size} bytes.")
 
             if not size:
                 self.logger.warning("Empty data send!")
 
-            reader.close()
+            raw_file.close()
         except ClickhouseServerError as error:
             raise error
         except Exception as error:
@@ -393,7 +427,6 @@ class NativeDumper(BaseDumper):
         self.logger.info(
             f"Write into {self.connector.host}.{table_name} done."
         )
-        self.refresh()
 
     def from_rows(
         self,
@@ -428,13 +461,17 @@ class NativeDumper(BaseDumper):
             columns=make_columns(column_list),
         )
 
-        self.logger.info(transfer_diagram(source, destination))
-        collect()
+        log_diagram(self.logger, self.mode, source, destination)
+
+        if self.mode is DumperMode.TEST:
+            return
+
         self.logger.info(
             f"Start write into {self.connector.host}.{table_name}."
         )
 
         try:
+            collect()
             self.cursor.upload_data(
                 table=table_name,
                 data=data,
@@ -448,7 +485,6 @@ class NativeDumper(BaseDumper):
         self.logger.info(
             f"Write into {self.connector.host}.{table_name} done."
         )
-        self.refresh()
 
     def refresh(self) -> None:
         """Refresh session."""

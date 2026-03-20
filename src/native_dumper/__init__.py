@@ -5,6 +5,7 @@ from base_dumper import (
     CompressionMethod,
     DumperLogger,
     DumperMode,
+    DumpFormat,
     IsolationLevel,
     Timeout,
 )
@@ -31,6 +32,7 @@ __all__ = (
     "CompressionMethod",
     "DumperLogger",
     "DumperMode",
+    "DumpFormat",
     "HTTPCursor",
     "IsolationLevel",
     "NativeDumper",

@@ -1,6 +1,12 @@
 from collections import OrderedDict
 
-from nativelib import Column
+from nativelib import (
+    Array,
+    Column,
+    ColumnInfo,
+    DType,
+    LowCardinality,
+)
 
 
 def make_columns(
@@ -8,26 +14,37 @@ def make_columns(
 ) -> OrderedDict[str, str]:
     """Make DBMetadata.columns dictionary."""
 
+    def __col_type(
+        dtype: Array | DType | LowCardinality,
+        info: ColumnInfo,
+    ) -> str:
+
+        if dtype.__class__ is Array:
+            return f"Array({__col_type(dtype.dtype, info)})"
+
+        if dtype.__class__ is LowCardinality:
+            return f"LowCardinality({__col_type(dtype.dtype, info)})"
+
+        if dtype.__class__ is DType:
+            if dtype.name == "FixedString":
+                return f"{dtype.name}({info.length})"
+            if dtype.name == "Decimal":
+                return f"{dtype.name}({info.precision}, {info.scale})"
+            if dtype.name == "DateTime64":
+                if info.tzinfo:
+                    return f"{dtype.name}({info.precision}, {info.tzinfo})"
+                return f"{dtype.name}({info.precision})"
+            if dtype.name in ("Enum8", "Enum16"):
+                return f"{dtype.name}({info.enumcase})"
+            if dtype.name == "Time64":
+                return f"{dtype.name}({info.precision})"
+            return dtype.name
+
     columns = OrderedDict()
 
     for column in column_list:
-        col_type = column.dtype.name
+        dtype = column.dtype
         info = column.info
-
-        if col_type == "FixedString":
-            col_type = f"{col_type}({info.length})"
-        elif col_type == "Decimal":
-            col_type = f"{col_type}({info.precision}, {info.scale})"
-        elif col_type == "DateTime64":
-            if info.tzinfo:
-                col_type = f"{col_type}({info.precision}, {info.tzinfo})"
-            else:
-                col_type = f"{col_type}({info.precision})"
-        elif col_type in ("Enum8", "Enum16"):
-            col_type = f"{col_type}({info.enumcase})"
-        elif col_type == "Time64":
-            col_type = f"{col_type}({info.precision})"
-
-        columns[column.column] = col_type
+        columns[column.column] = __col_type(dtype, info)
 
     return columns
