@@ -3,6 +3,7 @@ from base_dumper import (
     BaseDumperValueError,
 )
 
+
 class ClickhouseServerError(BaseDumperValueError):
     """Clickhouse errors."""
 

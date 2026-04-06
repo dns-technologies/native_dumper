@@ -90,7 +90,6 @@ class NativeDumper(BaseDumper):
     ) -> None:
         """Class initialization."""
 
-
         if int(connector.port) == 9000:
             raise NativeDumperValueError(
                 "NativeDumper don't support port 9000, please, use 8123."
