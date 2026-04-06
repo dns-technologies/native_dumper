@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from io import BufferedReader
 
-from .defines import CHUNK_SIZE
+from .sizes import CHUNK_SIZE
 
 
 def file_writer(fileobj: BufferedReader) -> Generator[bytes, None, None]:

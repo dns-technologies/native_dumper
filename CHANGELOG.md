@@ -1,9 +1,29 @@
 # Version History
 
+## 0.3.7.dev0
+
+* Developer release (not public to pip)
+* Update depends base-dumper==0.2.0.dev4
+* Update depends csvpack==0.1.0.dev4
+* Update depends light-compressor==0.1.1.dev1
+* Update depends nativelib==0.2.5.dev0
+* Add pytests
+* Add NativeStreamReader class for read native stream
+* Change pyo3 revision to 0.28.2
+* Delete Code: 92. DB::Exception: (EMPTY_DATA_PASSED)
+* Delete optional parameter waiting_data to HTTPCursor.get_stream() method
+* Decompose repository
+* Refactor python code
+* Refactor pyo3http rust code
+* Remove AbstractCursor import
+* Remove HTTPCursor.header X-ClickHouse-Compression key
+* Remove Rust source code from wheel package
+* Update README.md
+
 ## 0.3.6.dev3
 
 * Developer release (not public to pip)
-* Update depends base_dumper==0.1.0.dev5
+* Update depends base-dumper==0.1.0.dev5
 * Add TEST mode actions
 * Add NativeDumper.user_agent parameter
 * Add NativeDumper.dump_format parameter
@@ -18,7 +38,7 @@
 ## 0.3.6.dev2
 
 * Developer release (not public to pip)
-* Update depends base_dumper==0.1.0.dev4
+* Update depends base-dumper==0.1.0.dev4
 * Update depends light-compressor==0.1.0.dev3
 * Update depends nativelib==0.2.3.dev4
 * Add timeout=None to HttpSession
@@ -36,7 +56,7 @@
 ## 0.3.6.dev1
 
 * Developer release (not public to pip)
-* Update depends base_dumper==0.1.0.dev2
+* Update depends base-dumper==0.1.0.dev2
 * Update depends light-compressor==0.1.0.dev2
 * Update depends nativelib==0.2.3.dev3
 * Add compression_level attribute to HTTPCursor
@@ -45,7 +65,7 @@
 ## 0.3.6.dev0
 
 * Developer release (not public to pip)
-* Add depends base_dumper==0.0.0.5
+* Add depends base-dumper==0.0.0.5
 * Add mode parameter for future updates
 * Add worked timeout and isolation parameters
 * CHConnector now based on DBConnector
@@ -60,7 +80,7 @@
 * Refactor code
 * Remove depends light-compressor, sqlparse
 * Remove deprecated param DBMS_DEFAULT_TIMEOUT_SEC from defines.py
-* Removed duplicate code if it already in the base_dumper package
+* Removed duplicate code if it already in the base-dumper package
 
 ## 0.3.5.3
 

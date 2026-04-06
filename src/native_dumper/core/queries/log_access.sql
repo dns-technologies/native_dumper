@@ -1,0 +1,1 @@
+check grant select on system.query_log

@@ -1,12 +1,20 @@
 use pyo3::prelude::*;
+use pyo3::exceptions::{
+    PyIOError,
+    PyRuntimeError,
+    PyStopIteration,
+    PyTypeError,
+};
 use pyo3::types::{PyBytes, PyList};
-use reqwest::{Client, Response, header::{HeaderMap, HeaderName, HeaderValue}};
+use reqwest::{Client, Error, Response};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::runtime::Runtime;
 
-#[pyclass]
+
+#[pyclass(from_py_object)]
 struct HttpResponse {
     response: Arc<Mutex<Option<Response>>>,
     buffer: Arc<Mutex<Vec<u8>>>,
@@ -20,6 +28,7 @@ struct HttpResponse {
     seek_allowed: Arc<Mutex<bool>>,
     has_used_seek: Arc<Mutex<bool>>,
 }
+
 
 impl HttpResponse {
     fn is_reading_complete(&self) -> bool {
@@ -41,7 +50,9 @@ impl HttpResponse {
         *first_read_data_guard = None;
     }
 
-    async fn read_chunk(response: &mut Response) -> Result<Option<Vec<u8>>, reqwest::Error> {
+    async fn read_chunk(
+        response: &mut Response,
+    ) -> Result<Option<Vec<u8>>, Error> {
         match response.chunk().await {
             Ok(Some(chunk)) => Ok(Some(chunk.to_vec())),
             Ok(None) => Ok(None),
@@ -51,6 +62,7 @@ impl HttpResponse {
 
     fn initialize_metadata(&self) {
         let response_guard = self.response.lock().unwrap();
+
         if let Some(ref resp) = *response_guard {
             {
                 let mut status_guard = self.status_code.lock().unwrap();
@@ -60,16 +72,22 @@ impl HttpResponse {
             {
                 let mut headers_guard = self.headers.lock().unwrap();
                 let mut headers_map = HashMap::new();
+
                 for (key, value) in resp.headers() {
                     if let Ok(value_str) = value.to_str() {
-                        headers_map.insert(key.as_str().to_lowercase(), value_str.to_string());
+                        headers_map.insert(
+                            key.as_str().to_lowercase(),
+                            value_str.to_string(),
+                        );
                     }
                 }
                 *headers_guard = Some(headers_map);
             }
 
             {
-                let mut content_length_guard = self.content_length.lock().unwrap();
+                let mut content_length_guard = {
+                    self.content_length.lock().unwrap()
+                };
                 *content_length_guard = resp.content_length();
             }
         }
@@ -89,11 +107,11 @@ impl HttpResponse {
             seek_allowed: Arc::new(Mutex::new(false)),
             has_used_seek: Arc::new(Mutex::new(false)),
         };
-
         response_obj.initialize_metadata();
         response_obj
     }
 }
+
 
 #[pymethods]
 impl HttpResponse {
@@ -131,20 +149,28 @@ impl HttpResponse {
 
                     if !buffer_guard.is_empty() {
                         if buffer_guard.len() <= target_size {
-                            collected_data = std::mem::take(&mut *buffer_guard);
+                            collected_data = {
+                                std::mem::take(&mut *buffer_guard)
+                            };
                         } else {
-                            collected_data = buffer_guard.drain(..target_size).collect();
+                            collected_data = {
+                                buffer_guard.drain(..target_size).collect()
+                            };
                         }
                     }
 
                     if collected_data.len() < target_size {
-                        let remaining_needed = target_size - collected_data.len();
+                        let remaining_needed = {
+                            target_size - collected_data.len()
+                        };
 
                         if target_size == usize::MAX {
                             loop {
                                 match Self::read_chunk(resp).await {
                                     Ok(Some(chunk_data)) => {
-                                        collected_data.extend_from_slice(&chunk_data);
+                                        collected_data.extend_from_slice(
+                                            &chunk_data,
+                                        );
                                     }
                                     Ok(None) => {
                                         *is_complete.lock().unwrap() = true;
@@ -163,11 +189,17 @@ impl HttpResponse {
                                 match Self::read_chunk(resp).await {
                                     Ok(Some(chunk_data)) => {
                                         if chunk_data.len() > remaining {
-                                            collected_data.extend_from_slice(&chunk_data[..remaining]);
-                                            buffer_guard.extend_from_slice(&chunk_data[remaining..]);
+                                            collected_data.extend_from_slice(
+                                                &chunk_data[..remaining],
+                                            );
+                                            buffer_guard.extend_from_slice(
+                                                &chunk_data[remaining..],
+                                            );
                                             break;
                                         } else {
-                                            collected_data.extend_from_slice(&chunk_data);
+                                            collected_data.extend_from_slice(
+                                                &chunk_data,
+                                            );
                                             remaining -= chunk_data.len();
                                         }
                                     }
@@ -185,13 +217,20 @@ impl HttpResponse {
                     }
 
                     let should_save_first_read = {
-                        let first_read_data_guard = first_read_data.lock().unwrap();
-                        first_read_data_guard.is_none() && !collected_data.is_empty()
+                        let first_read_data_guard = {
+                            first_read_data.lock().unwrap()
+                        };
+                        first_read_data_guard.is_none() &&
+                        !collected_data.is_empty()
                     };
 
                     if should_save_first_read {
-                        let mut first_read_data_guard = first_read_data.lock().unwrap();
-                        let mut seek_allowed_guard = seek_allowed.lock().unwrap();
+                        let mut first_read_data_guard = {
+                            first_read_data.lock().unwrap()
+                        };
+                        let mut seek_allowed_guard = {
+                            seek_allowed.lock().unwrap()
+                        };
                         *first_read_data_guard = Some(collected_data.clone());
                         *seek_allowed_guard = true;
                     }
@@ -225,7 +264,7 @@ impl HttpResponse {
                 let mut response_guard = response.lock().unwrap();
                 let mut buffer_guard = buffer.lock().unwrap();
                 let mut pos_guard = position.lock().unwrap();
-                
+
                 if *is_complete.lock().unwrap() {
                     return Vec::new();
                 }
@@ -240,7 +279,9 @@ impl HttpResponse {
                                 if !chunk_data.is_empty() {
                                     let byte = chunk_data[0];
                                     if chunk_data.len() > 1 {
-                                        buffer_guard.extend_from_slice(&chunk_data[1..]);
+                                        buffer_guard.extend_from_slice(
+                                            &chunk_data[1..],
+                                        );
                                     }
                                     Some(byte)
                                 } else {
@@ -260,13 +301,19 @@ impl HttpResponse {
 
                     if let Some(byte) = result_byte {
                         let should_save_first_read = {
-                            let first_read_data_guard = first_read_data.lock().unwrap();
+                            let first_read_data_guard = {
+                                first_read_data.lock().unwrap()
+                            };
                             first_read_data_guard.is_none()
                         };
 
                         if should_save_first_read {
-                            let mut first_read_data_guard = first_read_data.lock().unwrap();
-                            let mut seek_allowed_guard = seek_allowed.lock().unwrap();
+                            let mut first_read_data_guard = {
+                                first_read_data.lock().unwrap()
+                            };
+                            let mut seek_allowed_guard = {
+                                seek_allowed.lock().unwrap()
+                            };
                             *first_read_data_guard = Some(vec![byte]);
                             *seek_allowed_guard = true;
                         }
@@ -364,8 +411,9 @@ impl HttpResponse {
             let (is_seek_allowed, has_first_data) = {
                 let seek_allowed_guard = self.seek_allowed.lock().unwrap();
                 let has_used_seek_guard = self.has_used_seek.lock().unwrap();
-                let first_read_data_guard = self.first_read_data.lock().unwrap();
-                
+                let first_read_data_guard = {
+                    self.first_read_data.lock().unwrap()
+                };
                 (
                     *seek_allowed_guard && !*has_used_seek_guard,
                     first_read_data_guard.is_some()
@@ -373,13 +421,13 @@ impl HttpResponse {
             };
 
             if !is_seek_allowed {
-                return Err(PyErr::new::<pyo3::exceptions::PyIOError, _>(
+                return Err(PyErr::new::<PyIOError, _>(
                     "Seek to position 0 is allowed only once after first read"
                 ));
             }
 
             if !has_first_data {
-                return Err(PyErr::new::<pyo3::exceptions::PyIOError, _>(
+                return Err(PyErr::new::<PyIOError, _>(
                     "No data has been read yet, cannot seek to position 0"
                 ));
             }
@@ -389,22 +437,22 @@ impl HttpResponse {
                 let mut position = self.position.lock().unwrap();
                 let mut buffer = self.buffer.lock().unwrap();
                 let mut complete = self.is_complete.lock().unwrap();
-                let mut has_used_seek_guard = self.has_used_seek.lock().unwrap();
-
+                let mut has_used_seek_guard = {
+                    self.has_used_seek.lock().unwrap()
+                };
                 buffer.clear();
                 buffer.extend_from_slice(first_data);
                 *position = 0;
                 *complete = false;
                 *has_used_seek_guard = true;
-                
                 Ok(())
             } else {
-                Err(PyErr::new::<pyo3::exceptions::PyIOError, _>(
+                Err(PyErr::new::<PyIOError, _>(
                     "No data has been read yet, cannot seek to position 0"
                 ))
             }
         } else {
-            Err(PyErr::new::<pyo3::exceptions::PyIOError, _>(
+            Err(PyErr::new::<PyIOError, _>(
                 "Seek is only supported to position 0 for HTTP streams"
             ))
         }
@@ -413,7 +461,6 @@ impl HttpResponse {
     fn seekable(&self) -> PyResult<bool> {
         let seek_allowed_guard = self.seek_allowed.lock().unwrap();
         let has_used_seek_guard = self.has_used_seek.lock().unwrap();
-
         Ok(*seek_allowed_guard && !*has_used_seek_guard)
     }
 
@@ -432,7 +479,9 @@ impl HttpResponse {
 
         if let Some(status) = self.get_status()? {
             info.insert("status".to_string(), status.to_string());
-            info.insert("status_text".to_string(), if self.is_success()? { "OK".to_string() } else { "Error".to_string() });
+            info.insert("status_text".to_string(), if self.is_success()? {
+                "OK".to_string()
+            } else { "Error".to_string() });
         }
 
         if let Some(length) = self.get_content_length()? {
@@ -449,23 +498,28 @@ impl HttpResponse {
 
         let position = self.tell()?;
         info.insert("bytes_read".to_string(), position.to_string());
-
         info.insert("closed".to_string(), self.is_closed()?.to_string());
-        info.insert("complete".to_string(), self.is_reading_complete().to_string());
-
+        info.insert(
+            "complete".to_string(),
+            self.is_reading_complete().to_string(),
+        );
         let seek_allowed = self.seek_allowed.lock().unwrap();
         let has_used_seek = self.has_used_seek.lock().unwrap();
         let first_read_data = self.first_read_data.lock().unwrap();
-
         info.insert("seek_allowed".to_string(), (*seek_allowed).to_string());
         info.insert("seek_used".to_string(), (*has_used_seek).to_string());
-        info.insert("has_first_read_data".to_string(), first_read_data.is_some().to_string());
-
+        info.insert(
+            "has_first_read_data".to_string(),
+            first_read_data.is_some().to_string(),
+        );
         let seekable = *seek_allowed && !*has_used_seek;
         info.insert("seekable".to_string(), seekable.to_string());
 
         if let Some(ref data) = *first_read_data {
-            info.insert("first_read_size".to_string(), data.len().to_string());
+            info.insert(
+                "first_read_size".to_string(),
+                data.len().to_string(),
+            );
         }
 
         Ok(info)
@@ -476,6 +530,7 @@ impl HttpResponse {
         Ok(*position)
     }
 }
+
 
 impl Clone for HttpResponse {
     fn clone(&self) -> Self {
@@ -495,11 +550,13 @@ impl Clone for HttpResponse {
     }
 }
 
+
 #[pyclass]
 struct HttpSession {
     client: Client,
     rt: Arc<Runtime>,
 }
+
 
 #[pymethods]
 impl HttpSession {
@@ -509,27 +566,29 @@ impl HttpSession {
         let client_builder = Client::builder()
             .tcp_keepalive(Duration::from_secs(60))
             .pool_max_idle_per_host(10);
-
         let client = if let Some(timeout_secs) = timeout {
             client_builder
                 .timeout(Duration::from_secs_f64(timeout_secs))
                 .build()
-                .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                .map_err(
+                    |e| PyErr::new::<PyRuntimeError, _>(
                     format!("Failed to create HTTP client: {}", e)
                 ))?
         } else {
             client_builder
                 .timeout(Duration::from_secs(30))
                 .build()
-                .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                .map_err(
+                    |e| PyErr::new::<PyRuntimeError, _>(
                     format!("Failed to create HTTP client: {}", e)
                 ))?
         };
-
         let rt = Arc::new(Runtime::new().map_err(|e| {
-            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to create runtime: {}", e))
+            PyErr::new::<PyRuntimeError, _>(format!(
+                "Failed to create runtime: {}",
+                e,
+            ))
         })?);
-
         Ok(HttpSession { client, rt })
     }
 
@@ -563,22 +622,28 @@ impl HttpSession {
         }
 
         if let Some(timeout_secs) = timeout {
-            request_builder = request_builder.timeout(Duration::from_secs_f64(timeout_secs));
+            request_builder = request_builder.timeout(
+                Duration::from_secs_f64(timeout_secs),
+            );
         }
 
         if let Some(data_obj) = data {
-            let data_bytes = if let Ok(bytes) = data_obj.downcast::<PyBytes>() {
+            let data_bytes = if let Ok(bytes) = data_obj.cast::<PyBytes>() {
                 bytes.as_bytes().to_vec()
-            } else if let Ok(list) = data_obj.downcast::<PyList>() {
+            } else if let Ok(list) = data_obj.cast::<PyList>() {
                 let mut result = Vec::new();
                 for (idx, item) in list.iter().enumerate() {
-                    if let Ok(bytes) = item.downcast::<PyBytes>() {
+                    if let Ok(bytes) = item.cast::<PyBytes>() {
                         result.extend_from_slice(bytes.as_bytes());
                     } else if let Ok(vec_bytes) = item.extract::<Vec<u8>>() {
                         result.extend_from_slice(&vec_bytes);
                     } else {
-                        return Err(PyErr::new::<pyo3::exceptions::PyTypeError, _>(
-                            format!("List element at index {} must be bytes or byte array", idx)
+                        return Err(
+                            PyErr::new::<PyTypeError, _>(
+                            format!(
+                                "List element at index {} must be bytes or byte array",
+                                idx,
+                            )
                         ));
                     }
                 }
@@ -589,36 +654,39 @@ impl HttpSession {
                 let mut result = Vec::new();
                 let iter = data_obj.getattr("__iter__")?;
                 let iterator = iter.call0()?;
-                
-                loop {
-                    let next_result = iterator.call_method0("__next__");
-                    match next_result {
-                        Ok(item) => {
-                            if let Ok(bytes) = item.downcast::<PyBytes>() {
-                                result.extend_from_slice(bytes.as_bytes());
-                            } else if let Ok(vec_bytes) = item.extract::<Vec<u8>>() {
-                                result.extend_from_slice(&vec_bytes);
-                            } else if let Ok(byte_array) = item.extract::<[u8; 1]>() {
-                                result.extend_from_slice(&byte_array);
-                            } else if let Ok(byte) = item.extract::<u8>() {
-                                result.push(byte);
-                            } else {
-                                return Err(PyErr::new::<pyo3::exceptions::PyTypeError, _>(
-                                    "Iterator yielded unsupported type, expected bytes, bytearray, or u8"
-                                ));
-                            }
+
+            loop {
+                let next_result = iterator.call_method0("__next__");
+                match next_result {
+                    Ok(item) => {
+                        if let Ok(bytes) = item.cast::<PyBytes>() {
+                            result.extend_from_slice(bytes.as_bytes());
+                        } else if let Ok(vec_bytes) = item.extract::<Vec<u8>>() {
+                            result.extend_from_slice(&vec_bytes);
+                        } else if let Ok(byte_array) = item.extract::<[u8; 1]>() {
+                            result.extend_from_slice(&byte_array);
+                        } else if let Ok(byte) = item.extract::<u8>() {
+                            result.push(byte);
+                        } else {
+                            let err = PyErr::new::<PyTypeError, _>(
+                                "Iterator yielded unsupported type, \
+                                expected bytes, bytearray, or u8"
+                            );
+                            return Err(err);
                         }
-                        Err(e) => {
-                            if e.is_instance_of::<pyo3::exceptions::PyStopIteration>(py) {
-                                break;
-                            } else {
-                                return Err(PyErr::new::<pyo3::exceptions::PyTypeError, _>(
-                                    format!("Error during iteration: {}", e)
-                                ));
-                            }
+                    }
+                    Err(e) => {
+                        if e.is_instance_of::<PyStopIteration>(py) {
+                            break;
+                        } else {
+                            let err = PyErr::new::<PyTypeError, _>(
+                                format!("Error during iteration: {}", e)
+                            );
+                            return Err(err);
                         }
                     }
                 }
+            }
 
                 result
             };
@@ -634,10 +702,13 @@ impl HttpSession {
 
         match response {
             Ok(resp) => {
-                let response_obj = HttpResponse::from_response(resp, rt.clone());
+                let response_obj = HttpResponse::from_response(
+                    resp,
+                    rt.clone(),
+                );
                 Ok(response_obj)
             }
-            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyIOError, _>(
+            Err(e) => Err(PyErr::new::<PyIOError, _>(
                 format!("HTTP request failed: {}", e)
             )),
         }
@@ -656,12 +727,16 @@ impl HttpSession {
     }
 
     fn close(&mut self) {
-        if let Ok(rt) = Arc::try_unwrap(std::mem::replace(&mut self.rt, Arc::new(Runtime::new().unwrap()))) {
+        if let Ok(rt) = Arc::try_unwrap(std::mem::replace(
+            &mut self.rt,
+            Arc::new(Runtime::new().unwrap()),
+        )) {
             rt.shutdown_background();
         }
         let _ = std::mem::replace(&mut self.client, Client::new());
     }
 }
+
 
 #[pymodule]
 fn pyo3http(m: &Bound<'_, PyModule>) -> PyResult<()> {

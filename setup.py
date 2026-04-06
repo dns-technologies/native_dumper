@@ -3,7 +3,7 @@ from setuptools_rust import RustExtension
 
 setup(
     name="native-dumper",
-    version="0.3.6.dev3",
+    version="0.3.7.dev0",
     description=(
         "Library for read and write Native format between Clickhouse and file."
     ),
@@ -16,14 +16,16 @@ setup(
     package_dir={"": "src"},
     rust_extensions=[
         RustExtension(
-            "native_dumper.common.pyo3http",
-            path="src/native_dumper/common/pyo3http/Cargo.toml",
+            "native_dumper.core.pyo3http",
+            path="src/native_dumper/core/pyo3http/Cargo.toml",
             debug=False,
         )
     ],
     install_requires=[
-        "base_dumper==0.1.0.dev5",
-        "nativelib==0.2.3.dev4",
+        "base-dumper==0.2.0.dev4",
+        "csvpack==0.1.0.dev4",
+        "light-compressor==0.1.1.dev1",
+        "nativelib==0.2.5.dev0",
     ],
     include_package_data=True,
     zip_safe=False,

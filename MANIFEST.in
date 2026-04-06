@@ -1,18 +1,17 @@
 include README.md
 include LICENSE
 include Cargo.toml
-include Cargo.lock
 
-include src/native_dumper/common/pyo3http/Cargo.toml
-recursive-include src/native_dumper/common/pyo3http/src *.rs
-recursive-include src/native_dumper/common/queries/*.sql
-recursive-include src/native_dumper/common/ *.pyi
+recursive-include src/native_dumper/core/queries/*.sql
+recursive-include src/native_dumper/core/ *.pyi
 recursive-include src/native_dumper *.sql
 
-prune src/native_dumper/common/pyo3http/target
+prune src/native_dumper/core/pyo3http/target
 prune */target
 prune target
 
+global-exclude *.rs
+global-exclude *.toml
 global-exclude *.pyd
 global-exclude *.so
 global-exclude *.dylib

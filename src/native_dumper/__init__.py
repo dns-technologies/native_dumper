@@ -10,7 +10,7 @@ from base_dumper import (
     Timeout,
 )
 
-from .common import (
+from .core import (
     CHConnector,
     ClickhouseServerError,
     HTTPCursor,
