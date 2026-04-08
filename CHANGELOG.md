@@ -1,10 +1,20 @@
 # Version History
 
+## 0.3.7.dev1
+
+* Developer release (not public to pip)
+* Update depends base-dumper==0.2.0.dev5
+* Update depends csvpack==0.1.0.dev5
+* Update depends light-compressor==0.1.1.dev2
+* Update depends nativelib==0.2.5.dev1
+* Update pyo3 revision to 0.28.3
+* Update README.md
+
 ## 0.3.7.dev0
 
 * Developer release (not public to pip)
 * Update depends base-dumper==0.2.0.dev4
-* Update depends csvpack==0.1.0.dev4
+* Update depends csvpack==0.1.0.dev5
 * Update depends light-compressor==0.1.1.dev1
 * Update depends nativelib==0.2.5.dev0
 * Add pytests
@@ -38,7 +48,7 @@
 ## 0.3.6.dev2
 
 * Developer release (not public to pip)
-* Update depends base-dumper==0.1.0.dev4
+* Update depends base-dumper==0.1.0.dev5
 * Update depends light-compressor==0.1.0.dev3
 * Update depends nativelib==0.2.3.dev4
 * Add timeout=None to HttpSession
