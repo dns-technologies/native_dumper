@@ -88,6 +88,7 @@ class TestNativeDumper:
         assert dump_file.stat().st_size > 0  # noqa: S101
 
         new_table = f"{test_table}_copy"
+        ch_dumper.refresh()
 
         with ch_dumper.cursor as cur:
             cur.execute(f"""
@@ -97,8 +98,12 @@ class TestNativeDumper:
                 ) ENGINE = Memory
             """)
 
+        ch_dumper.refresh()
+
         with open(dump_file, "rb") as f:
             ch_dumper.write_dump(f, new_table)
+
+        ch_dumper.refresh()
 
         with ch_dumper:
             reader = ch_dumper.to_reader(f"SELECT name, age FROM {new_table}")

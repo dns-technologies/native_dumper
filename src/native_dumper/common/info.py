@@ -2,13 +2,14 @@ from ast import literal_eval
 
 from base_dumper import DebugInfo
 
-from ..core.pyo3http import HttpResponse
+from ..core.session import HttpResponse
+from ..core.pyo3http import HttpRustResponse
 
 
 def info_from_headers(
     host: str,
     kind: str,
-    response: HttpResponse,
+    response: HttpResponse | HttpRustResponse,
 ) -> DebugInfo:
     """Get DebugInfo from response.headers."""
 

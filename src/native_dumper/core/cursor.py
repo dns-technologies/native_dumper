@@ -17,12 +17,13 @@ from nativelib import NativeReader
 from ..version import __version__
 from .connector import CHConnector
 from .errors import ClickhouseServerError
-from .pyo3http import (
+from .session import (
     HttpResponse,
     HttpSession,
 )
 from .query import query_template
 from .stream import NativeStreamReader
+from .pyo3http import HttpRustResponse
 
 
 ERROR_BUFFER = BytesIO()
@@ -40,6 +41,15 @@ def string_error(data: bytes) -> str:
         "utf-8",
         errors="replace",
     ).strip()
+
+
+def define_stream(stream_type: str) -> str:
+    """Serialize stream type."""
+
+    if stream_type == "native":
+        return stream_type.capitalize()
+
+    return stream_type.upper()
 
 
 class HTTPCursor:
@@ -65,7 +75,7 @@ class HTTPCursor:
         self.compression_method = compression_method
         self.logger = logger
         self.timeout = timeout
-        self.stream_type = stream_type
+        self.stream_type = define_stream(stream_type)
         self.user_agent = user_agent
         self.session = HttpSession(timeout=self.timeout)
         self.headers = {
@@ -80,8 +90,8 @@ class HTTPCursor:
             "X-Content-Type-Options": "nosniff",
         }
         self.stream_reader = {
-            "csv": CSVStreamReader,
-            "native": NativeStreamReader,
+            "CSV": CSVStreamReader,
+            "Native": NativeStreamReader,
         }
         self.mode = {
             443: "https",
@@ -148,10 +158,19 @@ class HTTPCursor:
         reader = self.get_stream(query_version)
         self.headers_memory, self.server_version = next(reader.to_rows())
         reader.close()
-        self.params["send_progress_in_http_headers"] = "1"
-        self.params["http_zlib_compression_level"] = (
-            f"{self.compression_level}"
-        )
+        write_params = {
+            "async_insert": "1",
+            "async_insert_busy_timeout_ms": f"{self.timeout}000",
+            "http_response_buffer_size": "0",
+            "http_headers_progress_interval_ms": f"{self.timeout}000",
+            "http_zlib_compression_level": f"{self.compression_level}",
+            "http_receive_timeout": str(self.timeout),
+            "http_send_timeout": str(self.timeout),
+            "max_execution_time": str(self.timeout),
+            "send_progress_in_http_headers": "1",
+            "wait_for_async_insert": "1",
+        }
+        self.params.update(write_params)
         query_log = query_template("log_access")
         stream = self.post(query_log)
         status = stream.get_status()
@@ -159,8 +178,10 @@ class HTTPCursor:
         if status != 200:
             self.is_readonly = True
             self._compression_level = 3
-            del self.params["send_progress_in_http_headers"]
-            del self.params["http_zlib_compression_level"]
+
+            for key in write_params:
+                self.params.pop(key, None)
+
         else:
             bufferobj = define_reader(stream, self.compression_method)
             reader = NativeReader(bufferobj)
@@ -175,11 +196,12 @@ class HTTPCursor:
         self,
         query: str,
         data: Iterable[bytes] | None = None,
-    ) -> HttpResponse:
+    ) -> HttpResponse | HttpRustResponse:
         """Post response from clickhouse server."""
 
         self.params["query"] = query
         self.params["query_id"] = str(uuid4())
+
         return self.session.post(
             url=self.url,
             params=self.params,
@@ -192,7 +214,7 @@ class HTTPCursor:
         self,
         query: str,
         data: Iterable[bytes] | None = None,
-    ) -> HttpResponse:
+    ) -> HttpResponse | HttpRustResponse:
         """Get response from clickhouse server."""
 
         response = self.post(query, data)
@@ -256,7 +278,7 @@ class HTTPCursor:
     def execute(
         self,
         query: str,
-    ) -> HttpResponse:
+    ) -> HttpResponse | HttpRustResponse:
         """Exetute method with return HttpResponse."""
 
         return self.get_response(query)
@@ -268,6 +290,9 @@ class HTTPCursor:
 
     def refresh(self) -> None:
         """Refresh Session ID."""
+
+        if self.session.closed:
+            self.session = HttpSession(timeout=self.timeout)
 
         self.params["session_id"] = str(uuid4())
 

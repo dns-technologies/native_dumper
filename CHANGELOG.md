@@ -1,5 +1,20 @@
 # Version History
 
+## 0.3.7.dev3
+
+* Developer release (not public to pip)
+* Update depends nativelib==0.2.5.dev3
+* Add depends urllib3>=2.6.3
+* Add depends brotli>=1.2.0
+* Add more errors
+* Add urllib3.HTTPConnectionPool for stream write big data into Clickhouse servers
+* Fix vork with older clickhouse versions
+* Refactor rust code
+* Refactor HTTPCursor
+* Rename rust classes
+* Revision pyo3 crates
+* Improve pytests
+
 ## 0.3.7.dev2
 
 * Developer release (not public to pip)

@@ -1,7 +1,11 @@
 """Core module."""
 
+from . import errors as Error
 from .connector import CHConnector
-from .cursor import HTTPCursor
+from .cursor import (
+    HTTPCursor,
+    define_stream,
+)
 from .errors import (
     ClickhouseServerError,
     NativeDumperError,
@@ -9,7 +13,7 @@ from .errors import (
     NativeDumperValueError,
     NativeDumperWriteError,
 )
-from .pyo3http import (
+from .session import (
     HttpResponse,
     HttpSession,
 )
@@ -19,6 +23,7 @@ from .query import query_template
 __all__ = (
     "CHConnector",
     "ClickhouseServerError",
+    "Error",
     "HTTPCursor",
     "HttpResponse",
     "HttpSession",
@@ -26,6 +31,7 @@ __all__ = (
     "NativeDumperReadError",
     "NativeDumperValueError",
     "NativeDumperWriteError",
+    "define_stream",
     "make_columns",
     "query_template",
 )

@@ -3,6 +3,7 @@
 from base_dumper import (
     CompressionLevel,
     CompressionMethod,
+    DBMetadata,
     DumperLogger,
     DumperMode,
     DumpFormat,
@@ -13,6 +14,7 @@ from base_dumper import (
 from .core import (
     CHConnector,
     ClickhouseServerError,
+    Error,
     HTTPCursor,
     NativeDumperError,
     NativeDumperReadError,
@@ -30,9 +32,11 @@ __all__ = (
     "ClickhouseServerError",
     "CompressionLevel",
     "CompressionMethod",
+    "DBMetadata",
     "DumperLogger",
     "DumperMode",
     "DumpFormat",
+    "Error",
     "HTTPCursor",
     "IsolationLevel",
     "NativeDumper",

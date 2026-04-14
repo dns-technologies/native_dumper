@@ -1,8 +1,15 @@
 from typing import Iterable
 
 
-class HttpResponse:
-    """HttpResponse with fileobject methods."""
+class HttpError(Exception): ...
+class HttpTimeoutError(Exception): ...
+class HttpConnectionError(Exception): ...
+class HttpProtocolError(Exception): ...
+class HttpTypeError(Exception): ...
+
+
+class HttpRustResponse:
+    """HttpRustResponse with fileobject methods."""
 
     def __init__(self) -> None:
         """Class initialization."""
@@ -182,8 +189,8 @@ class HttpResponse:
         ...
 
 
-class HttpSession:
-    """HttpSession with post method only."""
+class HttpRustSession:
+    """HttpRustSession with post method only."""
 
     def __init__(
         self,
@@ -207,7 +214,7 @@ class HttpSession:
         params: dict[str, str] | None,
         data: bytes | Iterable[bytes | bytearray] | None,
         timeout: float | int | None,
-    ) -> HttpResponse:
+    ) -> HttpRustResponse:
         """Send a POST request.
 
         Args:
@@ -222,7 +229,7 @@ class HttpSession:
             timeout: Request timeout in seconds (overrides session timeout).
 
         Returns:
-            HttpResponse object.
+            HttpRustResponse object.
 
         Raises:
             IOError: If HTTP request fails.
@@ -238,7 +245,7 @@ class HttpSession:
         params: dict[str, str] | None,
         data: bytes | Iterable[bytes | bytearray] | None,
         timeout: float | int | None,
-    ) -> HttpResponse:
+    ) -> HttpRustResponse:
         """Send a POST request (alias for post method).
 
         Args:
@@ -249,7 +256,7 @@ class HttpSession:
             timeout: Request timeout in seconds.
 
         Returns:
-            HttpResponse object.
+            HttpRustResponse object.
         """
 
         ...

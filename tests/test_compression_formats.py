@@ -74,10 +74,10 @@ class TestCompressionFormats:
 
             with open(dump_file, "rb") as f:
                 dumper.write_dump(f, new_table)
+                # Проверяем данные через to_reader
+                reader = dumper.to_reader(table_name=new_table)
+                results = list(reader.to_rows())
 
-            # Проверяем данные через to_reader
-            reader = dumper.to_reader(table_name=new_table)
-            results = list(reader.to_rows())
             assert len(results) == len(test_rows)  # noqa: S101
 
             for result, expected in zip(results, test_rows):

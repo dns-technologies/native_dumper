@@ -57,6 +57,7 @@ from .core import (
     NativeDumperReadError,
     NativeDumperValueError,
     NativeDumperWriteError,
+    define_stream,
     query_template,
 )
 from .version import __version__
@@ -219,7 +220,7 @@ class NativeDumper(BaseDumper):
         """Property method for set dump_format value."""
 
         self._dump_format = dump_format_value
-        self.cursor.stream_type = self.stream_type
+        self.cursor.stream_type = define_stream(self.stream_type)
         self.cursor.headers["X-ClickHouse-Format"] = self.cursor.stream_type
         return self._dump_format
 
@@ -394,17 +395,22 @@ class NativeDumper(BaseDumper):
     ) -> None:
         """Write stream between Servers."""
 
-        self.__validate_action(
-            query_src,
-            table_src,
-            "Source query or table name not defined.",
-        )
-        super().write_between(
-            table_dest,
-            table_src,
-            query_src,
-            dumper_src,
-        )
+        try:
+            self.__validate_action(
+                query_src,
+                table_src,
+                "Source query or table name not defined.",
+            )
+            super().write_between(
+                table_dest,
+                table_src,
+                query_src,
+                dumper_src,
+            )
+            self.logger.info("Write between servers success.")
+        except Exception as error:
+            self.logger.error(f"NativeDumperWriteError: {error}")
+            raise NativeDumperWriteError(error)
 
     @multiquery
     def _to_reader(

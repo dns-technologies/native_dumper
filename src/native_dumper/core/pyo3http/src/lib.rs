@@ -1,21 +1,59 @@
-use pyo3::prelude::*;
+use pyo3::create_exception;
 use pyo3::exceptions::{
+    PyException,
     PyIOError,
     PyRuntimeError,
     PyStopIteration,
     PyTypeError,
 };
-use pyo3::types::{PyBytes, PyList};
-use reqwest::{Client, Error, Response};
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use pyo3::prelude::*;
+use pyo3::types::{
+    PyBytes,
+    PyList,
+};
+use reqwest::{
+    Client,
+    Error,
+    Response,
+};
+use reqwest::header::{
+    HeaderMap,
+    HeaderName,
+    HeaderValue,
+};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    Arc,
+    Mutex,
+};
 use std::time::Duration;
 use tokio::runtime::Runtime;
 
 
+create_exception!(pyo3http, HttpError, PyException);
+create_exception!(pyo3http, HttpTimeoutError, PyException);
+create_exception!(pyo3http, HttpConnectionError, PyException);
+create_exception!(pyo3http, HttpProtocolError, PyException);
+create_exception!(pyo3http, HttpTypeError, PyException);
+
+
+fn map_reqwest_error(e: reqwest::Error) -> PyErr {
+    let error_msg = e.to_string();
+    
+    if e.is_timeout() {
+        HttpTimeoutError::new_err(error_msg)
+    } else if e.is_connect() {
+        HttpConnectionError::new_err(error_msg)
+    } else if e.is_body() || e.is_decode() {
+        HttpProtocolError::new_err(error_msg)
+    } else {
+        HttpError::new_err(error_msg)
+    }
+}
+
+
 #[pyclass(from_py_object)]
-struct HttpResponse {
+struct HttpRustResponse {
     response: Arc<Mutex<Option<Response>>>,
     buffer: Arc<Mutex<Vec<u8>>>,
     position: Arc<Mutex<u64>>,
@@ -30,7 +68,7 @@ struct HttpResponse {
 }
 
 
-impl HttpResponse {
+impl HttpRustResponse {
     fn is_reading_complete(&self) -> bool {
         let complete_guard = self.is_complete.lock().unwrap();
         *complete_guard
@@ -114,7 +152,7 @@ impl HttpResponse {
 
 
 #[pymethods]
-impl HttpResponse {
+impl HttpRustResponse {
 
     #[pyo3(signature = (size=None))]
     fn read(&self, py: Python, size: Option<usize>) -> PyResult<Py<PyBytes>> {
@@ -532,7 +570,7 @@ impl HttpResponse {
 }
 
 
-impl Clone for HttpResponse {
+impl Clone for HttpRustResponse {
     fn clone(&self) -> Self {
         Self {
             response: self.response.clone(),
@@ -552,14 +590,14 @@ impl Clone for HttpResponse {
 
 
 #[pyclass]
-struct HttpSession {
+struct HttpRustSession {
     client: Client,
     rt: Arc<Runtime>,
 }
 
 
 #[pymethods]
-impl HttpSession {
+impl HttpRustSession {
     #[new]
     #[pyo3(signature = (timeout=None))]
     fn new(timeout: Option<f64>) -> PyResult<Self> {
@@ -589,7 +627,7 @@ impl HttpSession {
                 e,
             ))
         })?);
-        Ok(HttpSession { client, rt })
+        Ok(HttpRustSession { client, rt })
     }
 
     fn post(
@@ -600,7 +638,7 @@ impl HttpSession {
         params: Option<HashMap<String, String>>,
         data: Option<Bound<'_, PyAny>>,
         timeout: Option<f64>,
-    ) -> PyResult<HttpResponse> {
+    ) -> PyResult<HttpRustResponse> {
         let client = self.client.clone();
         let rt = self.rt.clone();
         let mut header_map = HeaderMap::new();
@@ -668,7 +706,7 @@ impl HttpSession {
                         } else if let Ok(byte) = item.extract::<u8>() {
                             result.push(byte);
                         } else {
-                            let err = PyErr::new::<PyTypeError, _>(
+                            let err = HttpTypeError::new_err(
                                 "Iterator yielded unsupported type, \
                                 expected bytes, bytearray, or u8"
                             );
@@ -679,10 +717,9 @@ impl HttpSession {
                         if e.is_instance_of::<PyStopIteration>(py) {
                             break;
                         } else {
-                            let err = PyErr::new::<PyTypeError, _>(
+                            return Err(HttpTypeError::new_err(
                                 format!("Error during iteration: {}", e)
-                            );
-                            return Err(err);
+                            ));
                         }
                     }
                 }
@@ -702,15 +739,13 @@ impl HttpSession {
 
         match response {
             Ok(resp) => {
-                let response_obj = HttpResponse::from_response(
+                let response_obj = HttpRustResponse::from_response(
                     resp,
                     rt.clone(),
                 );
                 Ok(response_obj)
             }
-            Err(e) => Err(PyErr::new::<PyIOError, _>(
-                format!("HTTP request failed: {}", e)
-            )),
+            Err(e) => Err(map_reqwest_error(e)),
         }
     }
 
@@ -722,7 +757,7 @@ impl HttpSession {
         params: Option<HashMap<String, String>>,
         data: Option<Bound<'_, PyAny>>,
         timeout: Option<f64>,
-    ) -> PyResult<HttpResponse> {
+    ) -> PyResult<HttpRustResponse> {
         self.post(py, url, headers, params, data, timeout)
     }
 
@@ -740,7 +775,12 @@ impl HttpSession {
 
 #[pymodule]
 fn pyo3http(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<HttpSession>()?;
-    m.add_class::<HttpResponse>()?;
+    m.add_class::<HttpRustSession>()?;
+    m.add_class::<HttpRustResponse>()?;
+    m.add("HttpError", m.py().get_type::<HttpError>())?;
+    m.add("HttpTimeoutError", m.py().get_type::<HttpTimeoutError>())?;
+    m.add("HttpConnectionError", m.py().get_type::<HttpConnectionError>())?;
+    m.add("HttpProtocolError", m.py().get_type::<HttpProtocolError>())?;
+    m.add("HttpTypeError", m.py().get_type::<HttpTypeError>())?;
     Ok(())
 }
