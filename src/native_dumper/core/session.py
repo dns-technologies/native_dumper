@@ -36,6 +36,19 @@ class HttpResponse:
         self._seek_allowed = False
         self._has_used_seek = False
 
+    def read(self, *_: int) -> bytes: return b""
+    def read1(self) -> bytes: return b""
+    def seek(self, *_: int) -> None: ...
+    def tell(self) -> int: return 0
+
+    def close(self) -> None:
+        """Close the response and release resources."""
+
+        if not self._is_closed:
+            self._response.close()
+            self._is_closed = True
+            self._is_complete = True
+
     def get_status(self) -> int | None:
         """Get the HTTP status code.
 
@@ -138,14 +151,6 @@ class HttpResponse:
         """
 
         return self._seek_allowed and not self._has_used_seek
-
-    def close(self) -> None:
-        """Close the response and release resources."""
-
-        if not self._is_closed:
-            self._response.close()
-            self._is_closed = True
-            self._is_complete = True
 
     def is_closed(self) -> bool:
         """Check if the response is closed.

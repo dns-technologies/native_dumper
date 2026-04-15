@@ -407,7 +407,6 @@ class NativeDumper(BaseDumper):
                 query_src,
                 dumper_src,
             )
-            self.logger.info("Write between servers success.")
         except Exception as error:
             self.logger.error(f"NativeDumperWriteError: {error}")
             raise NativeDumperWriteError(error)

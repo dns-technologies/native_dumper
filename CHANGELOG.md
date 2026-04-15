@@ -7,8 +7,9 @@
 * Add depends urllib3>=2.6.3
 * Add depends brotli>=1.2.0
 * Add more errors
+* Add logger messages
 * Add urllib3.HTTPConnectionPool for stream write big data into Clickhouse servers
-* Fix vork with older clickhouse versions
+* Fix work with older clickhouse versions
 * Refactor rust code
 * Refactor HTTPCursor
 * Rename rust classes

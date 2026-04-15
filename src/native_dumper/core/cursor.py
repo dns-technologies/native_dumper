@@ -1,3 +1,4 @@
+from ast import literal_eval
 from io import BytesIO
 from logging import Logger
 from typing import Iterable
@@ -256,10 +257,15 @@ class HTTPCursor:
     ) -> None:
         """Download data into table."""
 
-        self.get_response(
+        response = self.get_response(
             query=f"INSERT INTO {table} FORMAT {self.stream_type}",
             data=data,
         )
+        summary = literal_eval(
+            response.get_header("X-ClickHouse-Summary"),
+        ) or {}
+        duration = round(int(summary.get("elapsed_ns", 0)) * 1e-9, 3)
+        self.logger.info(f"Duration time is {duration} seconds.")
 
     def metadata(
         self,
