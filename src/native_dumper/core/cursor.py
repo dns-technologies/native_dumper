@@ -96,6 +96,8 @@ class HTTPCursor:
         }
         self.mode = {
             443: "https",
+            8123: "http",
+            8443: "https",
         }.get(int(self.connector.port), "http")
         self.url = (
             f"{self.mode}://{self.connector.host}:{self.connector.port}"

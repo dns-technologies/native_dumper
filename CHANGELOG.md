@@ -9,6 +9,7 @@
 * Add more errors
 * Add logger messages
 * Add urllib3.HTTPConnectionPool for stream write big data into Clickhouse servers
+* Add 8443 port for https connection
 * Fix work with older clickhouse versions
 * Refactor rust code
 * Refactor HTTPCursor
