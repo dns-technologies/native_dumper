@@ -10,6 +10,7 @@
 * Add logger messages
 * Add urllib3.HTTPConnectionPool for stream write big data into Clickhouse servers
 * Add 8443 port for https connection
+* Delete error message NativeDumper don't support port 9000. Now it fixes automaticaly in HTTPCursor
 * Fix work with older clickhouse versions
 * Refactor rust code
 * Refactor HTTPCursor

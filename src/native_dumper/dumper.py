@@ -91,11 +91,6 @@ class NativeDumper(BaseDumper):
     ) -> None:
         """Class initialization."""
 
-        if int(connector.port) == 9000:
-            raise NativeDumperValueError(
-                "NativeDumper don't support port 9000, please, use 8123."
-            )
-
         if timeout is None:
             timeout = Timeout.CLICKHOUSE_DEFAULT_TIMEOUT
 
@@ -130,7 +125,7 @@ class NativeDumper(BaseDumper):
         except ClickhouseServerError as error:
             raise error
         except Exception as error:
-            logger.error(f"NativeDumperError: {error}")
+            self.logger.error(f"NativeDumperError: {error}")
             raise NativeDumperError(error)
 
         self.logger.info(

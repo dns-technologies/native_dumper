@@ -94,13 +94,17 @@ class HTTPCursor:
             "CSV": CSVStreamReader,
             "Native": NativeStreamReader,
         }
+        self.port = {9000: 8123}.get(
+            int(self.connector.port),
+            int(self.connector.port),
+        )
         self.mode = {
             443: "https",
             8123: "http",
             8443: "https",
-        }.get(int(self.connector.port), "http")
+        }.get(int(self.port), "http")
         self.url = (
-            f"{self.mode}://{self.connector.host}:{self.connector.port}"
+            f"{self.mode}://{self.connector.host}:{self.port}"
         )
         self.params = {
             "database": connector.dbname,
