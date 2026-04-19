@@ -334,6 +334,9 @@ class FakeDumper(BaseDumper):
             columns={"name": "text", "age": "int4"},
         )
 
+    def _dbmeta(self, metadata):  # noqa: ARG002
+        return self.metadata()
+
     def read_dump(
         self,
         fileobj,

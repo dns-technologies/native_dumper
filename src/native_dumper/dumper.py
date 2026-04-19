@@ -122,6 +122,7 @@ class NativeDumper(BaseDumper):
             )
             self.is_readonly, self.version = self.cursor.send_hello()
             self._compression_level = self.cursor.compression_level
+            self.with_compression = True
         except ClickhouseServerError as error:
             raise error
         except Exception as error:
@@ -152,7 +153,7 @@ class NativeDumper(BaseDumper):
             if self.is_readonly:
                 self.logger.warning("Read-only session. Write don't work!")
 
-    def __dbmeta(self, metadata: list[dict[str, str]]) -> DBMetadata:
+    def _dbmeta(self, metadata: list[dict[str, str]]) -> DBMetadata:
         """Generate DBMetadata from Native metadata."""
 
         columns = OrderedDict()
@@ -305,7 +306,7 @@ class NativeDumper(BaseDumper):
         if reader_meta:
             return metadata
 
-        return self.__dbmeta(metadata)
+        return self._dbmeta(metadata)
 
     @multiquery
     def _read_dump(
@@ -420,7 +421,7 @@ class NativeDumper(BaseDumper):
         if not metadata:
             db_metadata = self.metadata(query, table_name)
         elif not isinstance(metadata, DBMetadata):
-            db_metadata = self.__dbmeta(metadata)
+            db_metadata = self._dbmeta(metadata)
         else:
             db_metadata = metadata
 
@@ -447,7 +448,7 @@ class NativeDumper(BaseDumper):
             if not metadata:
                 metadata = self.metadata(query, table_name)
             elif not isinstance(metadata, DBMetadata):
-                metadata = self.__dbmeta(metadata)
+                metadata = self._dbmeta(metadata)
 
             log_table(self.logger, self.mode, metadata)
             return metadata
@@ -532,7 +533,7 @@ class NativeDumper(BaseDumper):
             source, dtype_data = self._db_meta_from_iter(dtype_data)
 
         metadata = self.metadata(table_name=table_name, reader_meta=True)
-        destination = self.__dbmeta(metadata)
+        destination = self._dbmeta(metadata)
 
         if self.dump_format is DumpFormat.BINARY:
             writer = NativeWriter(metadata)
@@ -573,7 +574,7 @@ class NativeDumper(BaseDumper):
             raise NativeDumperWriteError("Source metadata not define.")
 
         if not isinstance(source, DBMetadata):
-            source = self.__dbmeta(source)
+            source = self._dbmeta(source)
 
         if not destination:
             destination = self.metadata(table_name=table_name)
