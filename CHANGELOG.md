@@ -4,7 +4,7 @@
 
 * Developer release (not public to pip)
 * Update depends nativelib==0.2.5.dev3
-* Add depends urllib3>=2.6.3
+* Add depends urllib3>=1.26.11
 * Add depends brotli>=1.2.0
 * Add more errors
 * Add logger messages
