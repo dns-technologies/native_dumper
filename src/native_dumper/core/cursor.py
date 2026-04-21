@@ -243,13 +243,7 @@ class HTTPCursor:
         """Get answer from server as unpacked stream file."""
 
         stream = self.get_response(query)
-
-        try:
-            bufferobj = define_reader(stream, self.compression_method)
-        except EOFError:
-            """Empty data."""
-
-            bufferobj = BytesIO()
+        bufferobj = define_reader(stream, self.compression_method)
 
         if not db_metadata:
             return NativeReader(bufferobj)
