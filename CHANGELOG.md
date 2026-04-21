@@ -12,6 +12,7 @@
 * Add 8443 port for https connection
 * Delete error message NativeDumper don't support port 9000. Now it fixes automaticaly in HTTPCursor
 * Fix work with older clickhouse versions
+* Fix NativeDumper.mode_action() method
 * Refactor rust code
 * Refactor HTTPCursor
 * Rename rust classes

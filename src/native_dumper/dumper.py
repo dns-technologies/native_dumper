@@ -278,10 +278,11 @@ class NativeDumper(BaseDumper):
                             debug_info = DebugInfo(*next(reader.to_rows()))
                             reader.close()
                             break
-                        except EOFError:
+                        except StopIteration:
                             """Try again without waiting."""
 
-                return self.logger.info(debug_info)
+                self.logger.info(str(debug_info))
+                return
 
             return action_data(*args, **kwargs)
 
