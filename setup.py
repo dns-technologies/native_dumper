@@ -26,7 +26,7 @@ setup(
         "csvpack==0.1.0.dev6",
         "light-compressor==0.1.1.dev2",
         "nativelib==0.2.5.dev3",
-        "urllib3>=2.6.3",
+        "urllib3>=1.26.11",
         "brotli>=1.2.0",
     ],
     include_package_data=True,
