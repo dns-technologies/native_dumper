@@ -22,19 +22,19 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install Rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-      shell: bash
-
     - name: Install cibuildwheel
       run: pip install cibuildwheel
 
     - name: Install ONLY cibuildwheel dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install setuptools wheel setuptools-rust
+        pip install cython setuptools wheel setuptools-rust
+      shell: bash
+
+    - name: Install Rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       shell: bash
 
     - name: Build Linux x86_64 wheels
@@ -43,8 +43,7 @@ jobs:
         CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
         CIBW_ARCHS_LINUX: "x86_64"
         CIBW_BEFORE_ALL: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && source $HOME/.cargo/env"
-        CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$PATH"'
-        CIBW_BEFORE_BUILD: "yum install -y openssl-devel || apt-get update && apt-get install -y libssl-dev pkg-config || dnf install -y openssl-devel"
+        CIBW_BEFORE_BUILD: "yum install -y openssl-devel rust cargo || apt-get update && apt-get install -y libssl-dev pkg-config rustc cargo || dnf install -y openssl-devel rust cargo && pip install cython setuptools wheel setuptools-rust -r requirements.txt"
         CIBW_ENVIRONMENT_LINUX: "OPENSSL_DIR=/usr"
         CIBW_SKIP: "*-musllinux*"
 
@@ -67,19 +66,19 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install Rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-      shell: bash
-
     - name: Install cibuildwheel
       run: pip install cibuildwheel
 
     - name: Install ONLY cibuildwheel dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install setuptools wheel setuptools-rust
+        pip install cython setuptools wheel setuptools-rust
+      shell: bash
+
+    - name: Install Rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       shell: bash
 
     - name: Build Linux aarch64 wheels
@@ -88,8 +87,7 @@ jobs:
         CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
         CIBW_ARCHS_LINUX: "aarch64"
         CIBW_BEFORE_ALL: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && source $HOME/.cargo/env"
-        CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$PATH"'
-        CIBW_BEFORE_BUILD: "yum install -y openssl-devel || apt-get update && apt-get install -y libssl-dev pkg-config || dnf install -y openssl-devel"
+        CIBW_BEFORE_BUILD: "yum install -y openssl-devel rust cargo || apt-get update && apt-get install -y libssl-dev pkg-config rustc cargo || dnf install -y openssl-devel rust cargo && pip install cython setuptools wheel setuptools-rust -r requirements.txt"
         CIBW_ENVIRONMENT_LINUX: "OPENSSL_DIR=/usr"
         CIBW_SKIP: "*-musllinux*"
 
@@ -120,7 +118,8 @@ jobs:
       env:
         CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
         CIBW_ARCHS_WINDOWS: "AMD64"
-        CIBW_BEFORE_ALL: "powershell -Command \"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://win.rustup.rs/' -OutFile 'rustup-init.exe'; .\\rustup-init.exe -y\" && rustup target add x86_64-pc-windows-msvc"
+        CIBW_BEFORE_ALL: "pip install cython setuptools wheel setuptools-rust -r requirements.txt"
+        CIBW_BEFORE_BUILD: "powershell -Command \"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://win.rustup.rs/' -OutFile 'rustup-init.exe'; .\\rustup-init.exe -y\" && rustup target add x86_64-pc-windows-msvc"
         CIBW_SKIP: "*-win32"
 
     - name: Upload Windows wheels
@@ -150,8 +149,8 @@ jobs:
       env:
         CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
         CIBW_ARCHS_MACOS: "x86_64 arm64"
-        CIBW_BEFORE_ALL: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
-        CIBW_BEFORE_BUILD: "rustup target add x86_64-apple-darwin && rustup target add aarch64-apple-darwin"
+        CIBW_BEFORE_ALL: "pip install cython setuptools wheel setuptools-rust -r requirements.txt"
+        CIBW_BEFORE_BUILD: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && source $HOME/.cargo/env && rustup target add x86_64-apple-darwin && rustup target add aarch64-apple-darwin"
         MACOSX_DEPLOYMENT_TARGET: "10.14"
 
     - name: Upload macOS wheels
