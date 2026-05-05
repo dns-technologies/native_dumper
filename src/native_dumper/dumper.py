@@ -74,6 +74,7 @@ class NativeDumper(BaseDumper):
     mode: DumperMode
     dump_format: DumpFormat
     s3_file: bool
+    use_remote_if_available: bool
     user_agent: str
     cursor: HTTPCursor
 
@@ -84,10 +85,11 @@ class NativeDumper(BaseDumper):
         compression_level: int = CompressionLevel.ZSTD_DEFAULT,
         logger: Logger | None = None,
         timeout: int | None = None,
-        isolation: IsolationLevel = IsolationLevel.committed,
+        isolation: IsolationLevel = IsolationLevel.COMMITTED,
         mode: DumperMode = DumperMode.PROD,
         dump_format: DumpFormat = DumpFormat.BINARY,
         s3_file: bool = False,
+        use_remote_if_available: bool = True,
     ) -> None:
         """Class initialization."""
 
@@ -107,6 +109,7 @@ class NativeDumper(BaseDumper):
             mode,
             dump_format,
             s3_file,
+            use_remote_if_available,
         )
 
         try:
@@ -263,7 +266,7 @@ class NativeDumper(BaseDumper):
 
                 if self.cursor.headers_memory or self.is_readonly:
                     host = self.connector.host
-                    kind = get_query_kind(action_data)
+                    kind = get_query_kind(action_data, self.dialect)
                     debug_info = info_from_headers(host, kind, response)
                 else:
                     query_id = self.cursor.params["query_id"]

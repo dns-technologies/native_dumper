@@ -256,6 +256,10 @@ class FakeDumper(BaseDumper):
     def stream_type(self) -> str:
         return self.dump_format.name.lower()
 
+    @property
+    def dbname(self) -> str:
+        return self._dbname
+
     def write_between(
         self,
         table_dest: str,

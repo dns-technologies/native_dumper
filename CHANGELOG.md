@@ -1,5 +1,15 @@
 # Version History
 
+## 0.3.8.dev0
+
+* Developer release (not public to pip)
+* Improve NativeDumper.mode_action() method
+* Improve pytests
+* Update depends base-dumper==0.3.0.dev0
+* Update depends csvpack==0.2.0.dev0
+* Update depends light-compressor==0.1.1.dev3
+* Update depends nativelib==0.2.5.dev4
+
 ## 0.3.7.dev3
 
 * Developer release (not public to pip)
@@ -40,7 +50,7 @@
 
 * Developer release (not public to pip)
 * Update depends base-dumper==0.2.0.dev4
-* Update depends csvpack==0.1.0.dev6
+* Update depends csvpack==0.1.0.dev4
 * Update depends light-compressor==0.1.1.dev1
 * Update depends nativelib==0.2.5.dev0
 * Add pytests

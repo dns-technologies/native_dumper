@@ -260,7 +260,7 @@ When `mode=DumperMode.DEBUG`, the dumper provides:
 - `base_dumper` >= 0.2.0.dev5
 - `nativelib` >= 0.2.5.dev1
 - `csvpack` >= 0.1.0.dev5
-- `light-compressor` >= 0.1.1.dev2
+- `light-compressor` >= 0.1.1.dev3
 
 ## License
 
