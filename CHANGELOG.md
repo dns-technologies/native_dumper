@@ -3,12 +3,15 @@
 ## 0.3.8.dev0
 
 * Developer release (not public to pip)
+* Add build wheels for manylinux aarch64
 * Improve NativeDumper.mode_action() method
 * Improve pytests
+* Update build_wheels.yml
 * Update depends base-dumper==0.3.0.dev0
 * Update depends csvpack==0.2.0.dev0
 * Update depends light-compressor==0.1.1.dev3
 * Update depends nativelib==0.2.5.dev4
+* Update README.md
 
 ## 0.3.7.dev3
 

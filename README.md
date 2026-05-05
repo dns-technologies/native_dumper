@@ -257,10 +257,12 @@ When `mode=DumperMode.DEBUG`, the dumper provides:
 ## Dependencies
 
 - Python >= 3.10
-- `base_dumper` >= 0.2.0.dev5
-- `nativelib` >= 0.2.5.dev1
-- `csvpack` >= 0.1.0.dev5
+- `base_dumper` >= 0.3.0.dev0
+- `csvpack` >= 0.2.0.dev0
 - `light-compressor` >= 0.1.1.dev3
+- `nativelib` >= 0.2.5.dev4
+- `urllib3` >= 1.26.11
+- `brotli` >= 1.2.0
 
 ## License
 
