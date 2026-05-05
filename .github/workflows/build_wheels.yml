@@ -42,7 +42,7 @@ jobs:
       env:
         CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
         CIBW_ARCHS_LINUX: "x86_64"
-        CIBW_BEFORE_ALL: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+        CIBW_BEFORE_ALL: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && source $HOME/.cargo/env"
         CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$PATH"'
         CIBW_BEFORE_BUILD: "yum install -y openssl-devel || apt-get update && apt-get install -y libssl-dev pkg-config || dnf install -y openssl-devel"
         CIBW_ENVIRONMENT_LINUX: "OPENSSL_DIR=/usr"
@@ -87,7 +87,7 @@ jobs:
       env:
         CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
         CIBW_ARCHS_LINUX: "aarch64"
-        CIBW_BEFORE_ALL: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+        CIBW_BEFORE_ALL: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && source $HOME/.cargo/env"
         CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$PATH"'
         CIBW_BEFORE_BUILD: "yum install -y openssl-devel || apt-get update && apt-get install -y libssl-dev pkg-config || dnf install -y openssl-devel"
         CIBW_ENVIRONMENT_LINUX: "OPENSSL_DIR=/usr"
